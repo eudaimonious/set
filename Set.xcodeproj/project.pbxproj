@@ -54,14 +54,22 @@
 		561AE5191FD8865000307931 /* Set */ = {
 			isa = PBXGroup;
 			children = (
-				561AE51A1FD8865000307931 /* AppDelegate.swift */,
+				561AE52C1FD88F3900307931 /* Supporting Files */,
 				561AE51C1FD8865000307931 /* ViewController.swift */,
 				561AE51E1FD8865000307931 /* Main.storyboard */,
-				561AE5211FD8865000307931 /* Assets.xcassets */,
-				561AE5231FD8865000307931 /* LaunchScreen.storyboard */,
 				561AE5261FD8865000307931 /* Info.plist */,
 			);
 			path = Set;
+			sourceTree = "<group>";
+		};
+		561AE52C1FD88F3900307931 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				561AE51A1FD8865000307931 /* AppDelegate.swift */,
+				561AE5211FD8865000307931 /* Assets.xcassets */,
+				561AE5231FD8865000307931 /* LaunchScreen.storyboard */,
+			);
+			path = "Supporting Files";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

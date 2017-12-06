@@ -15,11 +15,16 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view, typically from a nib.
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    @IBOutlet weak var scoreLabel: UILabel!
+    @IBOutlet var cardButtons: [UIButton]!
+
+    @IBAction func touchDealThree(_ sender: UIButton) {
     }
 
+    @IBAction func touchCard(_ sender: UIButton) {
+    }
 
+    @IBAction func touchNewGame(_ sender: UIButton) {
+    }
 }
 

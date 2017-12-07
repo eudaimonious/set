@@ -25,6 +25,9 @@ class ViewController: UIViewController {
     }
 
     @IBAction func touchCard(_ sender: UIButton) {
+        let selection = !sender.isSelected
+        sender.isSelected = selection
+        setCardOutline(sender, selected: selection)
     }
 
     @IBAction func touchNewGame(_ sender: UIButton) {
@@ -76,9 +79,9 @@ class ViewController: UIViewController {
         button.setAttributedTitle(NSAttributedString(string: title, attributes: titleAttributes), for: UIControlState.normal)
     }
 
-    private func setCardOutline(_ button: UIButton) {
+    private func setCardOutline(_ button: UIButton, selected: Bool = false) {
         button.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-        button.layer.borderColor = UIColor.purple.cgColor
+        button.layer.borderColor = selected ? #colorLiteral(red: 0.9529411793, green: 0.6862745285, blue: 0.1333333403, alpha: 1).cgColor : #colorLiteral(red: 0.6203327134, green: 0.2605122145, blue: 0.7667143085, alpha: 1).cgColor
         button.layer.borderWidth = 3.0
         button.layer.cornerRadius = 8.0
     }

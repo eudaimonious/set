@@ -11,6 +11,7 @@ import Foundation
 class Game {
     let deck = Deck()
     private(set) var score = 0
+    private(set) var selection: Card?
 
     init() {
         Card.resetIdentifierFactory()
@@ -34,7 +35,7 @@ class Game {
         return isSet
     }
 
-    func updateCardStatuses(selection selectedId: Int) {
+    func updateCardStatuses(selection selectedId: Int?) {
         updatePriorMatchAttempt()
         updateSelectedCard(selectedId)
         updateCurrentMatchAttempt()
@@ -45,12 +46,18 @@ class Game {
         deck.badMatchCards.forEach { $0.status = .notSelected }
     }
 
-    func updateSelectedCard(_ selectedId: Int) {
-        let card = deck.cards.first(where: { $0.identifier == selectedId })!
-        switch card.status {
-        case .selected: card.status = .notSelected
-        case .notSelected: card.status = .selected
-        default: print("error")
+    func updateSelectedCard(_ selectedId: Int?) {
+        if let id = selectedId {
+            selection = deck.cards.first(where: { $0.identifier == id })!
+            if let card = selection {
+                switch card.status {
+                case .selected:
+                    card.status = .notSelected
+                    score -= 1
+                case .notSelected: card.status = .selected
+                default: print("error")
+                }
+            }
         }
     }
 

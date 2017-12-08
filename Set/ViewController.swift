@@ -52,22 +52,26 @@ class ViewController: UIViewController {
     // Updating card status
 
     @IBAction func touchCard(_ sender: UIButton) {
-        replaceMatchedCards()
-        game.updateCardStatuses(selection: sender.tag)
+        let unselectableButtons = replaceMatchedCards()
+        let selectedButtonTag = unselectableButtons.contains(sender) ? nil : sender.tag
+        game.updateCardStatuses(selection: selectedButtonTag)
         updateCardOutlineColors()
         scoreLabel.text = "Score: \(game.score)"
     }
 
-    private func replaceMatchedCards() {
+    private func replaceMatchedCards() -> [UIButton] {
         let matchedCards = game.deck.goodMatchCards
+        var matchedButtons: [UIButton] = []
         if !matchedCards.isEmpty {
             for button in cardButtons {
                 if game.deck.goodMatchCards.map({$0.identifier}).contains(button.tag) {
                     button.setAttributedTitle(nil, for: UIControlState.normal)
+                    matchedButtons.append(button)
                 }
             }
             dealCards(numberOfCards: matchedCards.count)
         }
+        return matchedButtons
     }
 
     private func updateCardOutlineColors() {

@@ -10,6 +10,7 @@ import Foundation
 
 class Game {
     let deck = Deck()
+    private(set) var score = 0
 
     init() {
         Card.resetIdentifierFactory()
@@ -58,8 +59,10 @@ class Game {
         if selectedCards.count == 3 {
             if hasSet(selectedCards) {
                 selectedCards.forEach { $0.status = .goodMatch }
+                score += 3
             } else {
                 selectedCards.forEach { $0.status = .badMatch }
+                score -= 5
             }
         }
 

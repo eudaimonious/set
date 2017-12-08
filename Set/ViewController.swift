@@ -55,6 +55,7 @@ class ViewController: UIViewController {
         replaceMatchedCards()
         game.updateCardStatuses(selection: sender.tag)
         updateCardOutlineColors()
+        scoreLabel.text = "Score: \(game.score)"
     }
 
     private func replaceMatchedCards() {

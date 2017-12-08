@@ -11,8 +11,7 @@ import Foundation
 class Game {
     let deck = Deck()
 
-    func hasSet(_ cardIndices: [Int]) -> Bool {
-        let cards = cardIndices.map { deck.cards[$0] }
+    func hasSet(_ cards: [Card]) -> Bool {
         var isSet = true
 
         let colorSet = Set(cards.map { $0.color })
@@ -26,7 +25,39 @@ class Game {
                 break
             }
         }
-        cards.forEach { $0.status = .matched }
+
         return isSet
+    }
+
+    func updateCardStatuses(selection selectedId: Int) {
+        updatePriorMatchAttempt()
+        updateSelectedCard(selectedId)
+        updateCurrentMatchAttempt()
+    }
+
+    func updatePriorMatchAttempt() {
+        deck.goodMatchCards.forEach { $0.status = .done }
+        deck.badMatchCards.forEach { $0.status = .notSelected }
+    }
+
+    func updateSelectedCard(_ selectedId: Int) {
+        let card = deck.cards.first(where: { $0.identifier == selectedId })!
+        switch card.status {
+        case .selected: card.status = .notSelected
+        case .notSelected: card.status = .selected
+        default: print("error")
+        }
+    }
+
+    func updateCurrentMatchAttempt() {
+        let selectedCards = deck.selectedCards
+        if selectedCards.count == 3 {
+            if hasSet(selectedCards) {
+                selectedCards.forEach { $0.status = .goodMatch }
+            } else {
+                selectedCards.forEach { $0.status = .badMatch }
+            }
+        }
+
     }
 }

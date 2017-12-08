@@ -12,12 +12,25 @@ class Deck {
     var cards = [Card]()
     init(){
         buildCards()
-        cards.shuffle()
+//        cards.shuffle()
     }
 
     var cardsInDeck: [Card] {
         return cards.filter { $0.status == Card.Status.inDeck }
     }
+
+    var goodMatchCards: [Card] {
+        return cards.filter { $0.status == Card.Status.goodMatch }
+    }
+
+    var badMatchCards: [Card] {
+        return cards.filter { $0.status == Card.Status.badMatch }
+    }
+
+    var selectedCards: [Card] {
+        return cards.filter { $0.status == Card.Status.selected }
+    }
+
 
     func buildCards() {
         for numberValue in 0...2 {
@@ -26,18 +39,19 @@ class Deck {
                     for colorValue in 0...2 {
                         cards.append(Card(number: numberValue, symbol: symbolValue, shading: shadingValue, color: colorValue))
                     }
-
                 }
-
             }
-
         }
     }
 
-    func nextCards(numberOfCards: Int) -> [Card] {
-        let cardsToDeal = cardsInDeck[0..<numberOfCards]
-        cardsToDeal.forEach { $0.status = Card.Status.inPlay }
-        return Array(cardsToDeal)
+    func nextCards(numberOfCards: Int) -> [Card]? {
+        if cardsInDeck.count >= numberOfCards {
+            let cardsToDeal = cardsInDeck[0..<numberOfCards]
+            cardsToDeal.forEach { $0.status = Card.Status.notSelected }
+            return Array(cardsToDeal)
+        } else {
+            return nil
+        }
     }
 
 }

@@ -9,6 +9,9 @@
 import Foundation
 
 class Card {
+    private static var identifierFactory = 0
+
+    let identifier: Int
     let color: Int
     let number: Int
     let shading: Int
@@ -21,11 +24,20 @@ class Card {
         self.number = number
         self.shading = shading
         self.symbol = symbol
+        self.identifier = Card.getUniqueIdentifier()
     }
 
     enum Status {
+        case badMatch
+        case done
+        case goodMatch
         case inDeck
-        case inPlay
-        case matched
+        case notSelected
+        case selected
+    }
+
+    private static func getUniqueIdentifier() -> Int {
+        identifierFactory += 1
+        return identifierFactory
     }
 }

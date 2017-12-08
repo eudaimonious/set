@@ -27,6 +27,15 @@ class Card {
         self.identifier = Card.getUniqueIdentifier()
     }
 
+    static func resetIdentifierFactory() {
+        identifierFactory = 0
+    }
+
+    private static func getUniqueIdentifier() -> Int {
+        identifierFactory += 1
+        return identifierFactory
+    }
+
     enum Status {
         case badMatch
         case done
@@ -34,10 +43,5 @@ class Card {
         case inDeck
         case notSelected
         case selected
-    }
-
-    private static func getUniqueIdentifier() -> Int {
-        identifierFactory += 1
-        return identifierFactory
     }
 }

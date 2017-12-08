@@ -11,6 +11,10 @@ import Foundation
 class Game {
     let deck = Deck()
 
+    init() {
+        Card.resetIdentifierFactory()
+    }
+
     func hasSet(_ cards: [Card]) -> Bool {
         var isSet = true
 

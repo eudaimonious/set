@@ -40,6 +40,9 @@ class ViewController: UIViewController {
     }
 
     @IBAction func touchNewGame(_ sender: UIButton) {
+        cardButtons.forEach { $0.setAttributedTitle(nil, for: UIControlState.normal) }
+        game = Game()
+        self.viewDidLoad()
     }
 
     //////////////////////////////

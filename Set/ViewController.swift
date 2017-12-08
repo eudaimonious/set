@@ -31,6 +31,12 @@ class ViewController: UIViewController {
     }
 
     @IBAction func touchDealThree(_ sender: UIButton) {
+        if game.deck.goodMatchCards.isEmpty {
+            dealCards(numberOfCards: 3)
+        } else {
+            replaceMatchedCards()
+            game.updatePriorMatchAttempt()
+        }
     }
 
     @IBAction func touchNewGame(_ sender: UIButton) {

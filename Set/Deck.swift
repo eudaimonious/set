@@ -12,7 +12,7 @@ class Deck {
     var cards = [Card]()
     init(){
         buildCards()
-//        cards.shuffle()
+        cards.shuffle()
     }
 
     var cardsInDeck: [Card] {

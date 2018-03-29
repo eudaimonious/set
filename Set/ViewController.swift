@@ -8,139 +8,123 @@
 
 import UIKit
 
-class ViewController: UIViewController {
-    //////////////////////////////
-    // Setup
+class ViewController: UIViewController, LayoutViews {
 
-    lazy var game = Game()
-    let cardsToStart = 12
+    // MARK: - Setup
+
+    @IBOutlet weak var scoreLabel: UILabel!
+
+    @IBOutlet weak var playArea: PlayArea! {
+        didSet {
+            playArea.delegate = self
+        }
+    }
+
+    var cardButtons: [CardButton] = []
+
+    private var game: Game! {
+        didSet {
+            scoreLabel.text = "Score: \(game.score)"
+            playArea.subviews.forEach { $0.removeFromSuperview() }
+            cardButtons = []
+            let cardsOnTable = game.cardsOnTable
+            cardsOnTable.indices.forEach { addSetCardView(for: cardsOnTable[$0]) }
+        }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        hideButtons(Array(cardButtons[12...]))
-        dealCards(numberOfCards: cardsToStart)
+        game = Game()
     }
 
-    @IBOutlet weak var scoreLabel: UILabel!
-    @IBOutlet var cardButtons: [UIButton]!
-
-    private func hideButtons(_ buttons: [UIButton]) {
-        for button in  buttons {
-            button.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
+    func updateViewFromModel() {
+        let grid = AspectRatioGrid(for: playArea.bounds, withNoOfFrames: game.cardsOnTable.count)
+        for index in cardButtons.indices {
+            let insetXY = (grid[index]?.height ?? 400)/100
+            cardButtons[index].frame = grid[index]?.insetBy(dx: insetXY, dy: insetXY) ?? CGRect.zero
         }
     }
+
+    // MARK: - Gestures
 
     @IBAction func touchDealThree(_ sender: UIButton) {
         if game.deck.goodMatchCards.isEmpty {
             dealCards(numberOfCards: 3)
         } else {
-            replaceMatchedCards()
+            _ = replaceMatchedCards()
             game.updatePriorMatchAttempt()
         }
     }
 
     @IBAction func touchNewGame(_ sender: UIButton) {
-        cardButtons.forEach {
-            $0.tag = 0
-            $0.setAttributedTitle(nil, for: UIControlState.normal)
-        }
         game = Game()
         self.viewDidLoad()
     }
 
-    //////////////////////////////
-    // Updating card status
+    @objc func touchCard(_ recognizer: UITapGestureRecognizer) {
+        guard let tappedCard = recognizer.view as? CardButton else { return }
 
-    @IBAction func touchCard(_ sender: UIButton) {
-        let unselectableButtons = replaceMatchedCards()
-        let selectedButtonTag = unselectableButtons.contains(sender) ? nil : sender.tag
-        game.updateCardStatuses(selection: selectedButtonTag)
-        updateCardOutlineColors()
+        let unselectableCards = replaceMatchedCards()
+        let cardSelection = unselectableCards.contains(tappedCard) ? nil : tappedCard
+        game.updateCardStatuses(after: cardSelection)
+        updateViewFromModel()
+        playArea.updateOutlinesFromModel()
         scoreLabel.text = "Score: \(game.score)"
     }
 
+    // MARK: - Update cards
+
     private func replaceMatchedCards() -> [UIButton] {
+        print("replacing cards")
         let matchedCards = game.deck.goodMatchCards
-        var matchedButtons: [UIButton] = []
+        var matchedButtons: [CardButton] = []
         if !matchedCards.isEmpty {
             for button in cardButtons {
-                if game.deck.goodMatchCards.map({$0.identifier}).contains(button.tag) {
-                    button.setAttributedTitle(nil, for: UIControlState.normal)
+                if let card = button.card, game.deck.goodMatchCards.contains(card) {
+                    button.removeFromSuperview()
                     matchedButtons.append(button)
                 }
             }
+
+            // TODO: If there are already 12 or more cards on the table don't draw three more cards
             dealCards(numberOfCards: matchedCards.count)
         }
+
         return matchedButtons
     }
 
-    private func updateCardOutlineColors() {
-        for button in cardButtons {
-            button.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-            button.layer.borderColor = getOutlineColor(for: button)
-            button.layer.borderWidth = 3.0
-            button.layer.cornerRadius = 8.0
-        }
-    }
-
-    private func getOutlineColor(for button: UIButton) -> CGColor {
-        var color = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0)
-        if button.tag != 0 {
-            let card = game.deck.cards.first(where: { $0.identifier == button.tag })!
-            switch card.status {
-            case .goodMatch: color = #colorLiteral(red: 0, green: 0.5603182912, blue: 0, alpha: 1)
-            case .badMatch: color = #colorLiteral(red: 1, green: 0.1491314173, blue: 0, alpha: 1)
-            case .notSelected: color = #colorLiteral(red: 0.6203327134, green: 0.2605122145, blue: 0.7667143085, alpha: 1)
-            case .selected: color = #colorLiteral(red: 0.9529411793, green: 0.6862745285, blue: 0.1333333403, alpha: 1)
-            default: color = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0)
-            }
-        }
-        return color.cgColor
-    }
-
-    //////////////////////////////
-    // Displaying new cards
+    /// MARK: - Add cards
     private func dealCards(numberOfCards: Int) {
-        let cardsToDeal = game.deck.nextCards(numberOfCards: numberOfCards)
-        if cardsToDeal == nil { return }
-        for card in cardsToDeal! {
-            if let button = cardButtons.nextEmptyButton {
-                drawCard(button, card)
+        if let cardsToDeal = game.drawCards(numberOfCards: numberOfCards) {
+            for index in cardsToDeal.indices {
+                addSetCardView(for: cardsToDeal[index])
             }
         }
     }
 
-    private func drawCard(_ button: UIButton, _ card: Card) {
-        button.tag = card.identifier
-        updateCardOutlineColors()
-        setCardDesign(button, card)
-    }
+    private func addSetCardView(for card: Card){
+        let newCardButton = CardButton()
+        newCardButton.card = card
+        newCardButton.contentMode = .redraw
+        var addCardToEnd = true
 
-    private func setCardDesign(_ button: UIButton, _ card: Card) {
-        let title = String(repeating: cardSymbols[card.symbol], count: card.number + 1)
-        let titleAttributes = cardColorAndShade(color: cardColors[card.color], shading: card.shading)
-        button.setAttributedTitle(NSAttributedString(string: title, attributes: titleAttributes), for: UIControlState.normal)
-    }
-
-    let cardColors = [#colorLiteral(red: 0.6203327134, green: 0.2605122145, blue: 0.7667143085, alpha: 1), #colorLiteral(red: 1, green: 0.1491314173, blue: 0, alpha: 1), #colorLiteral(red: 0, green: 0.5603182912, blue: 0, alpha: 1)]
-    let cardSymbols = ["▲", "●", "■"]
-
-    private func cardColorAndShade(color: UIColor, shading: Int) -> [NSAttributedStringKey:Any] {
-        switch shading {
-        case 0:
-            return [.strokeColor: color, .strokeWidth: 5] // outlined
-        case 1:
-            return [.foregroundColor: color.withAlphaComponent(0.15)] // shaded
-        case 2:
-            return [.foregroundColor: color] // filled in
-        default:
-            return [.foregroundColor: #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1)]
+        substituteMatchedCard: for (index, existingCardButton) in cardButtons.enumerated() {
+            let status = existingCardButton.card?.status
+            if status == .goodMatch {
+                cardButtons[index] = newCardButton
+                addCardToEnd = false
+                break substituteMatchedCard
+            }
         }
-    }
-}
 
-extension Array where Element: UIButton {
-    var nextEmptyButton: UIButton? {
-        return filter { $0.attributedTitle(for: UIControlState.normal) == nil }.first
+        if addCardToEnd {
+            cardButtons.append(newCardButton)
+        }
+
+        newCardButton.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(touchCard)))
+        playArea.addSubview(newCardButton)
+        game.cardsOnTable = cardButtons.map { $0.card! }
+        updateViewFromModel()
     }
+
 }

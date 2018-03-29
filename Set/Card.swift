@@ -8,32 +8,36 @@
 
 import Foundation
 
-class Card {
+class Card: Hashable {
+
+    // MARK: - Hashable
+
     private static var identifierFactory = 0
 
-    let identifier: Int
+    let hashValue: Int = {
+        identifierFactory += 1
+        return identifierFactory
+    }()
+
+    static func ==(lhs: Card, rhs: Card) -> Bool {
+        return lhs.hashValue == rhs.hashValue
+    }
+
+    var status = Status.inDeck
+
+    // MARK: - Visible attributes
+
     let color: Int
     let number: Int
     let shading: Int
     let symbol: Int
 
-    var status: Status = .inDeck
-
     init(number: Int, symbol: Int, shading: Int, color: Int) {
         self.color = color
         self.number = number
         self.shading = shading
+        self.status = .inDeck
         self.symbol = symbol
-        self.identifier = Card.getUniqueIdentifier()
-    }
-
-    static func resetIdentifierFactory() {
-        identifierFactory = 0
-    }
-
-    private static func getUniqueIdentifier() -> Int {
-        identifierFactory += 1
-        return identifierFactory
     }
 
     enum Status {
@@ -44,4 +48,5 @@ class Card {
         case notSelected
         case selected
     }
+
 }

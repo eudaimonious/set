@@ -9,12 +9,19 @@
 import Foundation
 
 class Game {
+    let cardsToStart = 12
     let deck = Deck()
+    lazy var cardsOnTable: [Card] = deck.nextCards(numberOfCards: cardsToStart) ?? []
     private(set) var score = 0
     private(set) var selection: Card?
 
-    init() {
-        Card.resetIdentifierFactory()
+    func drawCards(numberOfCards: Int) -> [Card]? {
+        if let cardsDrawn = deck.nextCards(numberOfCards: numberOfCards) {
+            cardsOnTable += cardsDrawn
+            return cardsDrawn
+        }
+
+        return nil
     }
 
     func hasSet(_ cards: [Card]) -> Bool {
@@ -35,9 +42,9 @@ class Game {
         return isSet
     }
 
-    func updateCardStatuses(selection selectedId: Int?) {
+    func updateCardStatuses(after cardButton: CardButton?) {
         updatePriorMatchAttempt()
-        updateSelectedCard(selectedId)
+        updateSelectedCard(cardButton)
         updateCurrentMatchAttempt()
     }
 
@@ -46,17 +53,14 @@ class Game {
         deck.badMatchCards.forEach { $0.status = .notSelected }
     }
 
-    func updateSelectedCard(_ selectedId: Int?) {
-        if let id = selectedId {
-            selection = deck.cards.first(where: { $0.identifier == id })!
-            if let card = selection {
-                switch card.status {
-                case .selected:
-                    card.status = .notSelected
-                    score -= 1
-                case .notSelected: card.status = .selected
-                default: print("error")
-                }
+    func updateSelectedCard(_ cardButton: CardButton?) {
+        if let card = cardButton?.card {
+            switch card.status {
+            case .selected:
+                card.status = .notSelected
+                score -= 1
+            case .notSelected: card.status = .selected
+            default: print("error")
             }
         }
     }

@@ -9,15 +9,14 @@
 import Foundation
 
 class Game {
-    let cardsToStart = 12
+    let numberOfCardsToStart = 12
     let deck = Deck()
-    lazy var cardsOnTable: [Card] = deck.nextCards(numberOfCards: cardsToStart) ?? []
+    lazy var cardsToStart: [Card] = deck.nextCards(numberOfCards: numberOfCardsToStart) ?? []
     private(set) var score = 0
-    private(set) var selection: Card?
 
     func drawCards(numberOfCards: Int) -> [Card]? {
         if let cardsDrawn = deck.nextCards(numberOfCards: numberOfCards) {
-            cardsOnTable += cardsDrawn
+            cardsToStart += cardsDrawn
             return cardsDrawn
         }
 
@@ -42,40 +41,101 @@ class Game {
         return isSet
     }
 
-    func updateCardStatuses(after cardButton: CardButton?) {
-        updatePriorMatchAttempt()
-        updateSelectedCard(cardButton)
-        updateCurrentMatchAttempt()
+    private func clear(badMatch: [Card]) {
+        badMatch.forEach { $0.status = .notSelected }
     }
 
-    func updatePriorMatchAttempt() {
-        deck.goodMatchCards.forEach { $0.status = .done }
-        deck.badMatchCards.forEach { $0.status = .notSelected }
+    private func clear(goodMatch: [Card]) {
+        goodMatch.forEach { $0.status = .done }
     }
 
-    func updateSelectedCard(_ cardButton: CardButton?) {
-        if let card = cardButton?.card {
-            switch card.status {
-            case .selected:
-                card.status = .notSelected
-                score -= 1
-            case .notSelected: card.status = .selected
-            default: print("error")
-            }
+    private func deselect(_ tappedCard: Card) {
+        tappedCard.status = .notSelected
+    }
+
+    private func select(_ tappedCard: Card) {
+        tappedCard.status = .selected
+    }
+
+    private func mark(badMatch: [Card]) {
+        badMatch.forEach { $0.status = .badMatch }
+    }
+
+    private func mark(goodMatch: [Card]) {
+        goodMatch.forEach { $0.status = .goodMatch }
+    }
+
+
+    private func penalizeBadMatch() {
+        score -= 5
+    }
+
+    private func penalizeDeselection() {
+        score -= 1
+    }
+
+    private func rewardGoodMatch() {
+        score += 3
+    }
+
+    func updateDeckAndScore(_ tappedCard: Card) {
+
+        if tappedCard.status == .selected {
+            deselect(tappedCard)
+            penalizeDeselection()
+            return
         }
-    }
 
-    func updateCurrentMatchAttempt() {
-        let selectedCards = deck.selectedCards
-        if selectedCards.count == 3 {
-            if hasSet(selectedCards) {
-                selectedCards.forEach { $0.status = .goodMatch }
-                score += 3
+        if deck.selectedCards.count == 2 {
+            let cardsForPotentialMatch = deck.selectedCards + [tappedCard]
+            let isGoodMatch = hasSet(cardsForPotentialMatch)
+
+            if !isGoodMatch {
+                mark(badMatch: cardsForPotentialMatch)
+                penalizeBadMatch()
             } else {
-                selectedCards.forEach { $0.status = .badMatch }
-                score -= 5
+                mark(goodMatch: cardsForPotentialMatch)
+                rewardGoodMatch()
+            }
+            return
+        }
+
+        if !deck.badMatchCards.isEmpty {
+            clear(badMatch: deck.badMatchCards)
+            select(tappedCard)
+            return
+        }
+
+
+        if !deck.goodMatchCards.isEmpty {
+            let didTapAGoodMatch = deck.goodMatchCards.contains(tappedCard)
+            if deck.cardsOnTable.count > numberOfCardsToStart {
+                clear(goodMatch: deck.goodMatchCards)
+                if !didTapAGoodMatch {
+                    select(tappedCard)
+                }
+                return
+            // Are there 12 or fewer cards on the table?
+            } else {
+                // Are there more cards in the deck?
+                if !deck.cardsInDeck.isEmpty {
+                    print("Player made first selection since a good match and gets new cards in their place.")
+                    // Replace the good match cards with new cards and turn one card to .selected unless it was a matched card
+                    deck.goodMatchCards.forEach { $0.status = .done }
+
+                    if !didTapAGoodMatch {
+                        print("Player's selection was not a matched card so it is now selected.")
+                        tappedCard.status = .selected
+                    }
+
+                    _ = deck.nextCards(numberOfCards: 3)
+                    return
+                }
             }
         }
 
+        // Otherwise simply select the tapped card
+        print("Player has made a new selection.")
+        tappedCard.status = .selected
     }
 }

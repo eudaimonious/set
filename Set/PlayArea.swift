@@ -8,22 +8,26 @@
 
 import UIKit
 
-protocol LayoutViews: class {
-    func updateViewFromModel()
-}
-
 class PlayArea: UIView {
 
-    weak var delegate: LayoutViews?
+    weak var delegate: UIViewController?
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        delegate?.updateViewFromModel()
+        updateSubviews()
     }
 
-    func updateOutlinesFromModel() {
+    func updateSubviews() {
         guard let cardButtons = subviews as? [CardButton] else { return }
-        cardButtons.forEach { $0.updateOutline() }
-    }
 
+        if cardButtons.count > 0 {
+            let grid = AspectRatioGrid(for: bounds, withNoOfFrames: cardButtons.count)
+            for index in cardButtons.indices {
+                let insetXY = (grid[index]?.height ?? 400)/100
+                let button = cardButtons[index]
+                button.frame = grid[index]?.insetBy(dx: insetXY, dy: insetXY) ?? CGRect.zero
+                button.updateOutline()
+            }
+        }
+    }
 }

@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ViewController: UIViewController, LayoutViews {
+class ViewController: UIViewController {
 
     // MARK: - Setup
 
@@ -20,15 +20,18 @@ class ViewController: UIViewController, LayoutViews {
         }
     }
 
-    var cardButtons: [CardButton] = []
+    var cardButtons: [CardButton] = [] {
+        didSet {
+            playArea.updateSubviews()
+        }
+    }
 
     private var game: Game! {
         didSet {
             scoreLabel.text = "Score: \(game.score)"
             playArea.subviews.forEach { $0.removeFromSuperview() }
             cardButtons = []
-            let cardsOnTable = game.cardsOnTable
-            cardsOnTable.indices.forEach { addSetCardView(for: cardsOnTable[$0]) }
+            game.cardsToStart.forEach { addCardButton(for: $0) }
         }
     }
 
@@ -37,94 +40,99 @@ class ViewController: UIViewController, LayoutViews {
         game = Game()
     }
 
-    func updateViewFromModel() {
-        let grid = AspectRatioGrid(for: playArea.bounds, withNoOfFrames: game.cardsOnTable.count)
-        for index in cardButtons.indices {
-            let insetXY = (grid[index]?.height ?? 400)/100
-            cardButtons[index].frame = grid[index]?.insetBy(dx: insetXY, dy: insetXY) ?? CGRect.zero
-        }
-    }
-
     // MARK: - Gestures
-
-    @IBAction func touchDealThree(_ sender: UIButton) {
-        if game.deck.goodMatchCards.isEmpty {
-            dealCards(numberOfCards: 3)
-        } else {
-            _ = replaceMatchedCards()
-            game.updatePriorMatchAttempt()
-        }
-    }
 
     @IBAction func touchNewGame(_ sender: UIButton) {
         game = Game()
         self.viewDidLoad()
     }
 
-    @objc func touchCard(_ recognizer: UITapGestureRecognizer) {
-        guard let tappedCard = recognizer.view as? CardButton else { return }
+    @IBAction func touchDealThree(_ sender: UIButton) {
+        // If there's a good match on the table, replace those cards
+        let matchedButtons = detectGoodMatchOnTable()
+        if !matchedButtons.isEmpty {
+            if let cardsToDeal = game.drawCards(numberOfCards: 3) {
+                replaceGoodMatchOnTable(goodMatchButtons: matchedButtons, newCards: cardsToDeal)
+            }
+        } else {
+            // Otherwise, add new cards
+            dealThreeCards()
+        }
+    }
 
-        let unselectableCards = replaceMatchedCards()
-        let cardSelection = unselectableCards.contains(tappedCard) ? nil : tappedCard
-        game.updateCardStatuses(after: cardSelection)
-        updateViewFromModel()
-        playArea.updateOutlinesFromModel()
+    @objc func touchCard(_ recognizer: UITapGestureRecognizer) {
+        guard let tappedButton = recognizer.view as? CardButton else { return }
+        guard let tappedCard = tappedButton.card else { return }
+
+        let matchedButtons = detectGoodMatchOnTable()
+        game.updateDeckAndScore(tappedCard)
+        let cardsToDeal = getNextCards()
+
+        if matchedButtons.count == cardsToDeal.count {
+            replaceGoodMatchOnTable(goodMatchButtons: matchedButtons, newCards: cardsToDeal)
+        } else {
+            remove(matchedButtons)
+        }
+
+        playArea.updateSubviews()
         scoreLabel.text = "Score: \(game.score)"
     }
 
-    // MARK: - Update cards
+    /// MARK: - Add cards
 
-    private func replaceMatchedCards() -> [UIButton] {
-        print("replacing cards")
+    private func addCardButton(for card: Card) {
+        let newCardButton = CardButton()
+        newCardButton.card = card
+        newCardButton.contentMode = .redraw
+        newCardButton.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(touchCard)))
+        playArea.addSubview(newCardButton)
+        cardButtons.append(newCardButton)
+    }
+
+    private func dealThreeCards() {
+        if let cardsToDeal = game.drawCards(numberOfCards: 3) {
+            for index in cardsToDeal.indices {
+                addCardButton(for: cardsToDeal[index])
+            }
+        }
+    }
+
+    private func getNextCards() -> [Card] {
+        let visibleCards: [Card] = cardButtons.flatMap { $0.card }
+        return game.deck.notSelectedCards.filter { (cardFromModel) in
+            !visibleCards.contains(cardFromModel)
+        }
+    }
+
+    private func replaceGoodMatchOnTable(goodMatchButtons matchedButtons: [CardButton], newCards cardsToDeal: [Card]) {
+        for (index, button) in matchedButtons.enumerated() {
+            button.card = cardsToDeal[index]
+        }
+    }
+
+    /// MARK: - Misc
+
+    private func detectGoodMatchOnTable() -> [CardButton] {
         let matchedCards = game.deck.goodMatchCards
         var matchedButtons: [CardButton] = []
         if !matchedCards.isEmpty {
             for button in cardButtons {
                 if let card = button.card, game.deck.goodMatchCards.contains(card) {
-                    button.removeFromSuperview()
                     matchedButtons.append(button)
                 }
             }
-
-            // TODO: If there are already 12 or more cards on the table don't draw three more cards
-            dealCards(numberOfCards: matchedCards.count)
         }
-
         return matchedButtons
     }
 
-    /// MARK: - Add cards
-    private func dealCards(numberOfCards: Int) {
-        if let cardsToDeal = game.drawCards(numberOfCards: numberOfCards) {
-            for index in cardsToDeal.indices {
-                addSetCardView(for: cardsToDeal[index])
-            }
-        }
-    }
-
-    private func addSetCardView(for card: Card){
-        let newCardButton = CardButton()
-        newCardButton.card = card
-        newCardButton.contentMode = .redraw
-        var addCardToEnd = true
-
-        substituteMatchedCard: for (index, existingCardButton) in cardButtons.enumerated() {
-            let status = existingCardButton.card?.status
-            if status == .goodMatch {
-                cardButtons[index] = newCardButton
-                addCardToEnd = false
-                break substituteMatchedCard
+    private func remove(_ matchedButtons: [CardButton]) {
+        matchedButtons.forEach { (matchedButton) in
+            if let index = cardButtons.index(of: matchedButton) {
+                cardButtons[index].removeFromSuperview()
+                cardButtons.remove(at: index)
             }
         }
 
-        if addCardToEnd {
-            cardButtons.append(newCardButton)
-        }
-
-        newCardButton.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(touchCard)))
-        playArea.addSubview(newCardButton)
-        game.cardsOnTable = cardButtons.map { $0.card! }
-        updateViewFromModel()
     }
 
 }

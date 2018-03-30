@@ -27,14 +27,21 @@ class Deck {
         return cards.filter { $0.status == .badMatch }
     }
 
+    var notSelectedCards: [Card] {
+        return cards.filter { $0.status == .notSelected }
+    }
+
     var selectedCards: [Card] {
         return cards.filter { $0.status == .selected }
     }
 
+    var cardsOnTable: [Card] {
+        return cards.filter { ![Card.Status.done, .inDeck].contains($0.status) }
+    }
 
     func buildCards() {
         for numberValue in 0...2 {
-            for symbolValue in 0...2{
+            for symbolValue in 0...2 {
                 for shadingValue in 0...2 {
                     for colorValue in 0...2 {
                         cards.append(Card(number: numberValue, symbol: symbolValue, shading: shadingValue, color: colorValue))
@@ -42,6 +49,7 @@ class Deck {
                 }
             }
         }
+        cards = Array(cards[Range(0...20)])
     }
 
     func nextCards(numberOfCards: Int) -> [Card]? {
